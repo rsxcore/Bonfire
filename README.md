@@ -118,3 +118,11 @@ Bonfire started in 2024 as **Simple Save Manager**, a C# console app by [@shisui
 ## License
 
 [MIT](LICENSE). Bonfire is a fan project and isn't affiliated with FromSoftware or Bandai Namco.
+
+## Support
+
+If Bonfire saved your run, you can buy me a coffee:
+
+<p align="center">
+  <a href="https://ko-fi.com/rsxcore"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi"></a>
+</p>
