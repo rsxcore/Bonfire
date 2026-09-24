@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using SoulsSaveManager.Tools;
+using System.Drawing;
 
 namespace SoulsSaveManager
 {
@@ -13,21 +14,11 @@ namespace SoulsSaveManager
                 SaveManager saveManager = null!;
 
                 #region StartingProgram
-                Console.WriteLine(" ┌─────$> Select supported games <$────────────────────────────────────────────────────────────────────┐\n" +
-                                  " │?>                                                                                                   │\n" +
-                                  " └─────────────────────────────────────────────────────────────────────────────────────────────────────┘"
-                                  );
+                ConsoleUtility.WriteBox(["?>"], "Select supported games");
+                ConsoleUtility.WriteBox(SaveManager.SoulsGameList.Select((game, i) => $"$> [{i + 1}]> {game}"));
 
-                Console.WriteLine(" ┌─────────────────────────────────────────────────────────────────────────────────────────────────────┐");
-
-                for (int i = 0; i < SaveManager.SoulsGameList.Length; i++)
-                {
-                    Console.WriteLine($" │$> [{i + 1}]> {SaveManager.SoulsGameList[i]}" +
-                        $"{new string(' ', (SaveManager.SoulsGameList.Max(x => x.Length) - SaveManager.SoulsGameList[i].Length) + 59)}│");
-                }
-
-                Console.WriteLine(" └─────────────────────────────────────────────────────────────────────────────────────────────────────┘");
-                Console.SetCursorPosition(4, Console.CursorTop - 10);
+                // Put the cursor after the "?>" prompt: back over the game list box and the header's bottom line.
+                Console.SetCursorPosition(4, Console.CursorTop - (SaveManager.SoulsGameList.Length + 2) - 2);
                 #endregion
 
                 ConsoleKeyInfo keyInfo = Console.ReadKey(true);
@@ -36,11 +27,11 @@ namespace SoulsSaveManager
                 switch (keyInfo.Key)
                 {
                     case ConsoleKey.D1:
-                        saveManager = new SaveManager("Dark Souls: Prepare To Die Edition", WorkingPaths.DarkSoulsPreparePath, "NGBI/DarkSouls", "DarkSoulsPrepareToDieEdition_save");
+                        saveManager = new SaveManager("Dark Souls: Prepare To Die Edition", WorkingPaths.DarkSoulsPreparePath, "NBGI/DarkSouls", "DarkSoulsPrepareToDieEdition_save");
                         break;
 
                     case ConsoleKey.D2:
-                        saveManager = new SaveManager("Dark Souls: Remastered", WorkingPaths.DarkSoulsRemasteredPath, "NGBI/DARK SOULS REMASTERED", "DarkSoulsRemastered_save");
+                        saveManager = new SaveManager("Dark Souls: Remastered", WorkingPaths.DarkSoulsRemasteredPath, "NBGI/DARK SOULS REMASTERED", "DarkSoulsRemastered_save");
                         break;
 
                     case ConsoleKey.D3:
@@ -59,25 +50,12 @@ namespace SoulsSaveManager
                         saveManager = new SaveManager("Elden Ring", WorkingPaths.EldenRingPath, "EldenRing", "EldenRing_save");
                         break;
                     case ConsoleKey.D7:
+                        string? bloodbornePath = GetBloodbornePath();
+                        if (bloodbornePath == null)
+                            continue;
 
-                        string bbConfigPath = Environment.CurrentDirectory + "/config.cfg";
-
-                        if (!File.Exists(bbConfigPath))
-                        {
-                            using (StreamWriter sw = new StreamWriter(new FileStream(bbConfigPath, FileMode.OpenOrCreate)))
-                            {
-                                Console.Write("[!]> Specify the path to ShadPS4 emulator folder: ");
-                                sw.WriteLine(Console.ReadLine());
-
-                                sw.Dispose();
-
-                                Console.Clear();
-                            }
-                        }
-
-                        WorkingPaths.BloodbornePath = new StreamReader(bbConfigPath).ReadLine() + "/user/savedata/1/CUSA03173";
-
-                        saveManager = new SaveManager("Bloodborne", WorkingPaths.BloodbornePath, "CUSA03173", "Bloodborne_save");
+                        WorkingPaths.BloodbornePath = bloodbornePath;
+                        saveManager = new SaveManager("Bloodborne", WorkingPaths.BloodbornePath, Path.GetFileName(bloodbornePath), "Bloodborne_save");
                         break;
                     default: continue;
 
@@ -89,10 +67,37 @@ namespace SoulsSaveManager
             }
         }
 
-        private static void Initialize() 
+        // Asks for the shadPS4 folder once and remembers it. Returns null if no Bloodborne save is found there.
+        private static string? GetBloodbornePath()
+        {
+            string? emulatorPath = File.Exists(WorkingPaths.ConfigPath)
+                ? File.ReadAllText(WorkingPaths.ConfigPath).Trim()
+                : null;
+
+            if (string.IsNullOrEmpty(emulatorPath))
+            {
+                Console.Write("[!]> Specify the path to ShadPS4 emulator folder: ");
+                emulatorPath = Console.ReadLine()?.Trim().Trim('"') ?? "";
+                Console.Clear();
+            }
+
+            string? savePath = WorkingPaths.FindBloodborneSave(emulatorPath);
+            if (savePath == null)
+            {
+                // Forget the folder so the user is asked again next time.
+                File.Delete(WorkingPaths.ConfigPath);
+                Colorful.Console.WriteLine($" [!]> No Bloodborne save found in \"{emulatorPath}\"", Color.Red);
+                return null;
+            }
+
+            File.WriteAllText(WorkingPaths.ConfigPath, emulatorPath);
+            return savePath;
+        }
+
+        private static void Initialize()
         {
             Colorful.Console.ForegroundColor = Color.FromArgb(255, 151, 124, 163);
-            Console.Title = "From Software Games Save Manager ";
+            Console.Title = "From Software Games Save Manager";
         }
     }
 }

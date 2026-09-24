@@ -6,11 +6,11 @@
     <RootNamespace>save_manager</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <ApplicationIcon>obj\floppy_icon_138597.ico</ApplicationIcon>
+    <ApplicationIcon>bonfire.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="obj\floppy_icon_138597.ico" />
+    <Content Include="bonfire.ico" />
   </ItemGroup>
 
   <ItemGroup>
