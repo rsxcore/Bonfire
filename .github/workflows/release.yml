@@ -1,6 +1,7 @@
 name: Release
 
-# Push a tag like v2.0.0 to build Bonfire.exe and publish it as a GitHub release.
+# Push a tag like v2.0.0 to build Bonfire.exe, publish it as a GitHub release
+# and, once NEXUS_API_KEY / NEXUS_FILE_ID are configured, upload it to Nexus Mods.
 on:
   push:
     tags: ["v*"]
@@ -11,6 +12,8 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
+    env:
+      NEXUS_API_KEY: ${{ secrets.NEXUS_API_KEY }}
     steps:
       - uses: actions/checkout@v7
 
@@ -19,10 +22,34 @@ jobs:
           go-version-file: go.mod
 
       - name: Build
+        id: build
         shell: pwsh
-        run: ./build.ps1 -Version ("${{ github.ref_name }}".TrimStart("v"))
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          ./build.ps1 -Version $version
+          Compress-Archive -Path dist/Bonfire.exe -DestinationPath "dist/Bonfire-$version.zip"
+          "version=$version" >> $env:GITHUB_OUTPUT
 
       - uses: softprops/action-gh-release@v3
         with:
-          files: dist/Bonfire.exe
+          files: |
+            dist/Bonfire.exe
+            dist/Bonfire-${{ steps.build.outputs.version }}.zip
           generate_release_notes: true
+
+      - name: Upload to Nexus Mods
+        if: env.NEXUS_API_KEY != '' && vars.NEXUS_FILE_ID != ''
+        uses: Nexus-Mods/upload-action@v1.0.0-beta.10
+        with:
+          api_key: ${{ secrets.NEXUS_API_KEY }}
+          file_id: ${{ vars.NEXUS_FILE_ID }}
+          filename: dist/Bonfire-${{ steps.build.outputs.version }}.zip
+          version: ${{ steps.build.outputs.version }}
+          display_name: Bonfire
+          description: Unzip and run Bonfire.exe. Works best in Windows Terminal.
+          archive_existing_version: true
+          update_mod_version: true
+          allow_mod_manager_download: false
+          mod_id: ${{ vars.NEXUS_MOD_ID }}
+          # The action requires mod_id whenever a changelog is given.
+          changelog: ${{ vars.NEXUS_MOD_ID != '' && format('See https://github.com/rsxcore/Bonfire/releases/tag/{0}', github.ref_name) || '' }}

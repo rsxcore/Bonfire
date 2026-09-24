@@ -41,6 +41,8 @@ func TestScreenshots(t *testing.T) {
 	}
 	write("screenshot.svg", m)
 	write("screenshot-restore.svg", press(m, "enter"))
+	write("screenshot-new.svg", press(m, "n", "Before Godrick"))
+	write("screenshot-help.svg", press(m, "?"))
 }
 
 // demoModel builds a model with made-up but realistic saves, without touching the disk.
